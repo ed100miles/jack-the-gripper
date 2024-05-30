@@ -7,11 +7,18 @@ from jwt.exceptions import InvalidTokenError
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 
-from jack_the_gripper.models import User, UserPublic, TokenData, Token
+from jack_the_gripper.models import (
+    User,
+    UserPublic,
+    UserCreate,
+    UserUpdate,
+    TokenData,
+    Token,
+)
 from jack_the_gripper.db_utils import get_session
 
 load_dotenv()
@@ -23,11 +30,27 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI()
+
+
+def create_user(new_user: UserCreate, session: Session):
+    user = User(
+        username=new_user.username,
+        email=new_user.email,
+        hashed_password=pwd_context.hash(new_user.password),
+    )
+    try:
+        session.add(user)
+        session.commit()
+    except IntegrityError:
+        raise HTTPException(
+            status_code=400, detail="User with that username or email already exists"
+        )
+    return UserPublic.model_validate(user)
 
 
 def get_user(session: Session, username: str) -> User:
@@ -37,6 +60,26 @@ def get_user(session: Session, username: str) -> User:
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Username not found")
     return user
+
+
+def delete_user(session: Session, username: str):
+    user = get_user(session, username)
+    session.delete(user)
+    session.commit()
+    return {"detail": "User deleted successfully"}
+
+
+def update_user(session: Session, username: str, new_data: UserUpdate) -> UserPublic:
+    user = get_user(session, username)
+    user.username = new_data.username if new_data.username else user.username
+    user.email = new_data.email if new_data.email else user.email
+    user.hashed_password = (
+        pwd_context.hash(new_data.password)
+        if new_data.password
+        else user.hashed_password
+    )
+    session.commit()
+    return UserPublic.model_validate(user)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -84,7 +127,7 @@ async def get_current_user(
     return user
 
 
-@app.post("/token")
+@app.post("/users/token/")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[Session, Depends(get_session)],
@@ -108,3 +151,27 @@ async def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     return UserPublic.model_validate(current_user)
+
+
+@app.delete("/users/me/")
+async def delete_users_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
+):
+    return delete_user(session, current_user.username)
+
+
+@app.post("/users/signup/", response_model=UserPublic)
+async def create_new_user(
+    new_user: UserCreate,
+    session: Annotated[Session, Depends(get_session)],
+):
+    return create_user(new_user, session)
+
+@app.put("/users/me/", response_model=UserPublic)
+async def update_users_me(
+    new_data: UserUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
+):
+    return update_user(session, current_user.username, new_data)
