@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "jack-the-gripper"
+version = "0.1.0"
+description = ""
+authors = ["Ed Miles <edmilestech@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+sqlmodel = "^0.0.18"
+alembic = "^1.13.1"
+fastapi = "^0.111.0"
+pyjwt = "^2.8.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-dotenv = "^1.0.1"
+
+[tool.poetry.scripts]
+dev = "jack_the_gripper.scripts:dev"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
