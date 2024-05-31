@@ -3,9 +3,10 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, create_engine, SQLModel
 from sqlalchemy.pool import StaticPool
 
-from jack_the_gripper.api.main import pwd_context
 from jack_the_gripper.models import UserCreate, User
-from jack_the_gripper.api.main import app, get_session
+from jack_the_gripper.api.main import app
+from jack_the_gripper.api.dependencies import get_session
+from jack_the_gripper.api.route_utils.user_utils import pwd_context
 
 DATABASE_URL = "sqlite:///:memory:"
 
