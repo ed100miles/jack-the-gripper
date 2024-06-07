@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "default": {
+      "format": "%(levelprefix)s %(message)s %(asctime)s",
+      "()": "uvicorn.logging.DefaultFormatter",
+      "use_colors": false
+    },
+    "colored": {
+      "format": "%(levelprefix)s %(message)s %(asctime)s",
+      "()": "uvicorn.logging.DefaultFormatter",
+      "use_colors": true
+    }
+  },
+  "handlers": {
+    "console": {
+      "level": "DEBUG",
+      "class": "logging.StreamHandler",
+      "formatter": "colored"
+    },
+    "file": {
+      "level": "DEBUG",
+      "class": "logging.FileHandler",
+      "filename": "app.log",
+      "formatter": "default"
+    }
+  },
+  "loggers": {
+    "root": {
+      "handlers": ["console"],
+      "level": "DEBUG"
+    }
+  }
+}
