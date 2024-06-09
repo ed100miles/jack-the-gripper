@@ -16,6 +16,6 @@ COPY --from=requirements-stage /tmp/requirements.txt /jack_the_gripper/requireme
 
 RUN pip install --no-cache-dir --upgrade -r /jack_the_gripper/requirements.txt
 
-COPY ./jack_the_gripper .env /jack_the_gripper/
+COPY ./jack_the_gripper /jack_the_gripper/
 
 CMD ["fastapi", "dev", "api/main.py", "--host", "0.0.0.0", "--port", "8080"]
