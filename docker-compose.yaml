@@ -1,0 +1,7 @@
+services:
+  jack:
+    build:
+      context: .
+      dockerfile: ./jack_the_gripper/Dockerfile
+    ports:
+      - "8080:8080"
